@@ -1,8 +1,9 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation'
-import { auth } from '../firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth ,db } from '../firebase';
+import { signInWithEmailAndPassword , onAuthStateChanged} from 'firebase/auth';
+import {getDoc,doc} from 'firebase/firestore';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../globals.css';
 
@@ -18,8 +19,25 @@ const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            await signInWithEmailAndPassword(auth, email, password);
-            router.push('/');
+            
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            const userDoc = await getDoc(doc(db, "users", "user.uid"));
+            console.log("userId",user.uid);
+            if(userDoc.exists()){
+                const userProfile = userDoc.data();
+                if(userProfile.role==='admin'){
+                    router.push('/admin');
+                }else{
+                    router.push('/');
+                }
+            }else{
+                throw new Error(
+                    "No user found"
+                )
+            }
+
+           
         } catch (err) {
             setError(err.message);
         }
